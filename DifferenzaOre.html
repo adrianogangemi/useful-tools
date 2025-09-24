@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calcolo Tempo Trascorso</title>
-  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1828/1828884.png">
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2921/2921222.png">
   <!-- Flatpickr CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
@@ -202,7 +202,6 @@
       intervalCount++;
       let div = document.createElement("div");
       div.className = "interval";
-      div.id = `interval${intervalCount}`;
 
       let label = document.createElement("span");
       label.className = "interval-label";
@@ -211,24 +210,22 @@
       // START
       let startTime = document.createElement("input");
       startTime.type = "text";
-      startTime.className = "time-picker";
-      startTime.id = `start${intervalCount}`;
+      startTime.className = "time-picker start-time";
 
       let btnStart = document.createElement("button");
       btnStart.textContent = "⌚";
       btnStart.className = "btn-small";
-      btnStart.onclick = () => setCurrentTime(startTime);
+      btnStart.onclick = () => setCurrentTime(startTime, div.flatpickrStart);
 
       // END
       let endTime = document.createElement("input");
       endTime.type = "text";
-      endTime.className = "time-picker";
-      endTime.id = `end${intervalCount}`;
+      endTime.className = "time-picker end-time";
 
       let btnEnd = document.createElement("button");
       btnEnd.textContent = "⌚";
       btnEnd.className = "btn-small";
-      btnEnd.onclick = () => setCurrentTime(endTime);
+      btnEnd.onclick = () => setCurrentTime(endTime, div.flatpickrEnd);
 
       // REMOVE
       let btnRemove = document.createElement("button");
@@ -247,15 +244,15 @@
 
       document.getElementById("intervals").appendChild(div);
 
-      // Attiva Flatpickr sugli input creati
-      flatpickr(startTime, {
+      // Attiva Flatpickr sugli input creati e salva i riferimenti
+      div.flatpickrStart = flatpickr(startTime, {
         enableTime: true,
         noCalendar: true,
         dateFormat: "H:i:S",  // 24h con secondi
         time_24hr: true
       });
 
-      flatpickr(endTime, {
+      div.flatpickrEnd = flatpickr(endTime, {
         enableTime: true,
         noCalendar: true,
         dateFormat: "H:i:S",
@@ -263,12 +260,16 @@
       });
     }
 
-    function setCurrentTime(input) {
+    function setCurrentTime(input, fpInstance) {
       let now = new Date();
       let h = now.getHours().toString().padStart(2, "0");
       let m = now.getMinutes().toString().padStart(2, "0");
       let s = now.getSeconds().toString().padStart(2, "0");
       input.value = `${h}:${m}:${s}`;
+      // Aggiorna anche Flatpickr se presente
+      if (fpInstance) {
+        fpInstance.setDate(`${h}:${m}:${s}`, true);
+      }
     }
 
     function calculate() {
@@ -281,8 +282,9 @@
 
       intervals.forEach(div => {
         index++;
-        let start = div.querySelector(`#start${index}`)?.value;
-        let end = div.querySelector(`#end${index}`)?.value;
+        // Seleziona input tramite classi invece che id
+        let start = div.querySelector(".start-time")?.value;
+        let end = div.querySelector(".end-time")?.value;
 
         if (!start || !end) return;
 

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Calcolo Tempo Trascorso</title>
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    :root {
+      --primary: #4CAF50;
+      --primary-dark: #388E3C;
+      --secondary: #2196F3;
+      --secondary-dark: #1976d2;
+      --danger: #e53935;
+      --danger-dark: #c62828;
+      --bg: #f5f7fa;
+      --card-bg: #ffffff;
+      --border: #ddd;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 25px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--primary-dark);
+    }
+
+    .interval {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fafafa;
+    }
+
+    .interval-label {
+      font-weight: bold;
+      margin-right: 6px;
+      color: #555;
+      min-width: 100px;
+    }
+
+    input.time-picker {
+      padding: 6px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      width: 110px;
+    }
+
+    .btn-small {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 6px;
+      background: #2196f378;
+      color: white;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background 0.2s;
+    }
+
+    .btn-small:hover {
+      background: var(--secondary-dark);
+    }
+
+    .btn-remove {
+      background: #7649bd;
+    }
+
+    .btn-remove:hover {
+      background: var(--danger-dark);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin: 15px 0;
+    }
+
+    .actions button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    .actions button:hover {
+      background: var(--primary-dark);
+    }
+
+    .result, .subtotal, .total {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .subtotal {
+      background: #fffde7;
+    }
+
+    .total {
+      background: #e8f5e9;
+      font-weight: bold;
+      border: 2px solid var(--primary);
+    }
+
+    @media (max-width: 600px) {
+      .interval {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .interval-label {
+        min-width: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>⏱️ Calcolo Tempo Trascorso</h2>
+    <div id="intervals"></div>
+
+    <div class="actions">
+      <button onclick="addInterval()">➕ Nuovo Intervallo</button>
+      <button onclick="calculate()">🧮 Calcola</button>
+    </div>
+
+    <div id="output"></div>
+  </div>
+
+  <!-- Flatpickr JS -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script>
+    let intervalCount = 0;
+
+    function addInterval() {
+      intervalCount++;
+      let div = document.createElement("div");
+      div.className = "interval";
+      div.id = `interval${intervalCount}`;
+
+      let label = document.createElement("span");
+      label.className = "interval-label";
+      label.textContent = `Intervallo ${intervalCount}:`;
+
+      // START
+      let startTime = document.createElement("input");
+      startTime.type = "text";
+      startTime.className = "time-picker";
+      startTime.id = `start${intervalCount}`;
+
+      let btnStart = document.createElement("button");
+      btnStart.textContent = "⌚";
+      btnStart.className = "btn-small";
+      btnStart.onclick = () => setCurrentTime(startTime);
+
+      // END
+      let endTime = document.createElement("input");
+      endTime.type = "text";
+      endTime.className = "time-picker";
+      endTime.id = `end${intervalCount}`;
+
+      let btnEnd = document.createElement("button");
+      btnEnd.textContent = "⌚";
+      btnEnd.className = "btn-small";
+      btnEnd.onclick = () => setCurrentTime(endTime);
+
+      // REMOVE
+      let btnRemove = document.createElement("button");
+      btnRemove.textContent = "🗑️❌";
+      btnRemove.className = "btn-small btn-remove";
+      btnRemove.onclick = () => div.remove();
+
+      div.appendChild(label);
+      div.appendChild(document.createTextNode(" dalle "));
+      div.appendChild(startTime);
+      div.appendChild(btnStart);
+      div.appendChild(document.createTextNode(" alle "));
+      div.appendChild(endTime);
+      div.appendChild(btnEnd);
+      div.appendChild(btnRemove);
+
+      document.getElementById("intervals").appendChild(div);
+
+      // Attiva Flatpickr sugli input creati
+      flatpickr(startTime, {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i:S",  // 24h con secondi
+        time_24hr: true
+      });
+
+      flatpickr(endTime, {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: "H:i:S",
+        time_24hr: true
+      });
+    }
+
+    function setCurrentTime(input) {
+      let now = new Date();
+      let h = now.getHours().toString().padStart(2, "0");
+      let m = now.getMinutes().toString().padStart(2, "0");
+      let s = now.getSeconds().toString().padStart(2, "0");
+      input.value = `${h}:${m}:${s}`;
+    }
+
+    function calculate() {
+      let totalSeconds = 0;
+      let output = document.getElementById("output");
+      output.innerHTML = "<h3>📊 Sviluppo del calcolo</h3>";
+
+      let intervals = document.querySelectorAll(".interval");
+      let index = 0;
+
+      intervals.forEach(div => {
+        index++;
+        let start = div.querySelector(`#start${index}`)?.value;
+        let end = div.querySelector(`#end${index}`)?.value;
+
+        if (!start || !end) return;
+
+        let [sh, sm, ss] = start.split(":").map(Number);
+        let [eh, em, es] = end.split(":").map(Number);
+
+        let startSec = sh * 3600 + sm * 60 + ss;
+        let endSec = eh * 3600 + em * 60 + es;
+        let diff = endSec - startSec;
+
+        if (diff < 0) diff += 24 * 3600; // se passa mezzanotte
+
+        totalSeconds += diff;
+
+        let h = Math.floor(diff / 3600);
+        let m = Math.floor((diff % 3600) / 60);
+        let s = diff % 60;
+
+        let subtotal = document.createElement("div");
+        subtotal.className = "subtotal";
+        subtotal.textContent = `Intervallo ${index}: ${h} ore, ${m} minuti, ${s} secondi`;
+        output.appendChild(subtotal);
+      });
+
+      let H = Math.floor(totalSeconds / 3600);
+      let M = Math.floor((totalSeconds % 3600) / 60);
+      let S = totalSeconds % 60;
+
+      let totalDiv = document.createElement("div");
+      totalDiv.className = "total";
+      totalDiv.textContent = `⏳ Tempo totale: ${H} ore, ${M} minuti, ${S} secondi`;
+      output.appendChild(totalDiv);
+    }
+
+    // primo intervallo al caricamento
+    addInterval();
+  </script>
+</body>
+</html>

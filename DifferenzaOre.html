@@ -7,6 +7,8 @@
   <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2921/2921222.png">
   <!-- Flatpickr CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
   <style>
     :root {
       --primary: #4CAF50;
@@ -111,11 +113,70 @@
       cursor: pointer;
       font-size: 15px;
       font-weight: 500;
-      transition: background 0.2s;
+      box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
+      transition: background 0.2s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5em;
+      outline: none;
+    }
+    .actions button:active {
+      transform: scale(0.97);
     }
 
     .actions button:hover {
       background: var(--primary-dark);
+      transform: translateY(-2px) scale(1.03);
+    }
+
+    .back-btn {
+      position: fixed;
+      left: 24px;
+      top: 24px;
+      z-index: 10;
+      width: 48px;
+      height: 48px;
+      background: var(--secondary);
+      color: white;
+      text-decoration: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .back-btn:hover {
+      background: var(--secondary-dark);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      transform: translateY(-2px);
+    }
+
+    .back-btn:active {
+      transform: scale(0.95);
+    }
+
+    .back-arrow {
+      font-size: 24px;
+      transition: transform 0.2s ease;
+    }
+
+    .back-btn:hover .back-arrow {
+      transform: translateX(-4px);
+    }
+
+    @media (max-width: 600px) {
+      .back-btn {
+        width: 40px;
+        height: 40px;
+        left: 16px;
+        top: 16px;
+      }
+      
+      .back-arrow {
+        font-size: 20px;
+      }
     }
 
     .result, .subtotal, .total {
@@ -181,6 +242,9 @@
   </style>
 </head>
 <body>
+  <a href="index.html" class="back-btn" aria-label="Torna indietro">
+    <span class="material-icons">arrow_back</span>
+  </a>
   <div class="container">
     <h2>⏱️ Calcolo Tempo Trascorso</h2>
     <div id="intervals"></div>

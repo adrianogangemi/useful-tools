@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Text to Speech</title>
+  <!-- Emoji favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗣️</text></svg>">
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    .back-btn {
+      position: fixed;
+      left: 24px;
+      top: 24px;
+      z-index: 10;
+      width: 48px;
+      height: 48px;
+      background: #1976d2;
+      color: white;
+      text-decoration: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .back-btn:hover {
+      background: #1565c0;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      transform: translateY(-2px);
+    }
+
+    .back-btn:active {
+      transform: scale(0.95);
+    }
+
+    .material-icons {
+      transition: transform 0.2s ease;
+    }
+
+    .back-btn:hover .material-icons {
+      transform: translateX(-4px);
+    }
+
+    @media (max-width: 600px) {
+      .back-btn {
+        width: 40px;
+        height: 40px;
+        left: 16px;
+        top: 16px;
+      }
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background: #f4f6f8;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .container {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 90%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    h1 {
+      margin: 0 0 1rem 0;
+      font-size: 1.8rem;
+      color: #333;
+    }
+
+    textarea {
+      width: 100%;
+      height: 150px;
+      padding: 1rem;
+      font-size: 1rem;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    textarea:focus {
+      border-color: #007bff;
+    }
+
+    .progress-container {
+      width: 100%;
+      height: 10px;
+      background: #eee;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #007bff;
+      transition: width 0.1s linear;
+    }
+
+    select {
+      width: 100%;
+      padding: 0.8rem;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    select:focus {
+      border-color: #007bff;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      border-radius: 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.1s;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-btn" aria-label="Torna indietro">
+    <span class="material-icons">arrow_back</span>
+  </a>
+  <div class="container">
+    <h1>🗣 Text to Speech</h1>
+    <textarea id="textInput" placeholder="Scrivi o incolla un testo lungo..."></textarea>
+
+    <div class="progress-container">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <select id="langSelect">
+      <option value="it-IT" selected>Italiano (it-IT)</option>
+      <option value="en-US">Inglese (en-US)</option>
+      <option value="fr-FR">Francese (fr-FR)</option>
+      <option value="es-ES">Spagnolo (es-ES)</option>
+      <option value="de-DE">Tedesco (de-DE)</option>
+    </select>
+
+    <select id="voiceSelect"></select>
+    
+    <div class="btn-group">
+      <button id="readBtn">Leggi</button>
+      <button id="stopBtn" style="background:#dc3545;">Stop</button>
+      <button id="clearBtn" style="background:#6c757d;">Clear</button>
+    </div>
+  </div>
+
+  <script>
+    const readBtn = document.getElementById("readBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const textInput = document.getElementById("textInput");
+    const voiceSelect = document.getElementById("voiceSelect");
+    const langSelect = document.getElementById("langSelect");
+    const progressBar = document.getElementById("progressBar");
+
+    let voices = [];
+    let utterance = null;
+
+    function populateVoices() {
+      voices = speechSynthesis.getVoices();
+      updateVoiceList();
+    }
+
+    function updateVoiceList() {
+      const selectedLang = langSelect.value;
+      voiceSelect.innerHTML = "";
+      const filteredVoices = voices.filter(v => v.lang === selectedLang);
+
+      filteredVoices.forEach((voice, index) => {
+        const option = document.createElement("option");
+        option.value = voice.name;
+        option.textContent = `${voice.name} (${voice.lang})`;
+        voiceSelect.appendChild(option);
+      });
+
+      if (voiceSelect.options.length === 0) {
+        const option = document.createElement("option");
+        option.textContent = "Nessuna voce disponibile";
+        option.disabled = true;
+        voiceSelect.appendChild(option);
+      }
+    }
+
+    populateVoices();
+    speechSynthesis.onvoiceschanged = populateVoices;
+
+    langSelect.addEventListener("change", updateVoiceList);
+
+    readBtn.addEventListener("click", () => {
+      const text = textInput.value.trim();
+      if (text !== "") {
+        speechSynthesis.cancel();
+
+        utterance = new SpeechSynthesisUtterance(text);
+        const selectedVoiceName = voiceSelect.value;
+        const selectedVoice = voices.find(v => v.name === selectedVoiceName);
+
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+        }
+        utterance.lang = langSelect.value;
+        utterance.rate = 1;
+        utterance.pitch = 1;
+
+        progressBar.style.width = "0%";
+
+        utterance.onboundary = (event) => {
+          if (event.charIndex !== undefined) {
+            const progress = (event.charIndex / text.length) * 100;
+            progressBar.style.width = progress + "%";
+          }
+        };
+
+        utterance.onend = () => {
+          progressBar.style.width = "100%";
+        };
+
+        speechSynthesis.speak(utterance);
+      }
+    });
+
+    stopBtn.addEventListener("click", () => {
+      speechSynthesis.cancel();
+      progressBar.style.width = "0%";
+    });
+
+    clearBtn.addEventListener("click", () => {
+      textInput.value = "";
+      progressBar.style.width = "0%";
+      speechSynthesis.cancel();
+    });
+  </script>
+</body>
+</html>

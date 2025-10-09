@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ricerca Aeroporto</title>
+  <!-- Emoji favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+  <!-- Material Icons -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    .back-btn {
+      position: fixed;
+      left: 24px;
+      top: 24px;
+      z-index: 10;
+      width: 48px;
+      height: 48px;
+      background: #007BFF;
+      color: white;
+      text-decoration: none;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .back-btn:hover {
+      background: #0056b3;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+      transform: translateY(-2px);
+    }
+
+    .back-btn:active {
+      transform: scale(0.95);
+    }
+
+    .material-icons {
+      transition: transform 0.2s ease;
+    }
+
+    .back-btn:hover .material-icons {
+      transform: translateX(-4px);
+    }
+
+    @media (max-width: 600px) {
+      .back-btn {
+        width: 40px;
+        height: 40px;
+        left: 16px;
+        top: 16px;
+      }
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom right, #007BFF, #00BFFF);
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      background-color: white;
+      padding: 40px;
+      border-radius: 20px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      text-align: center;
+      width: 90%;
+      max-width: 800px;
+      min-width: 320px;
+    }
+    input[type="text"] {
+      width: 80%;
+      padding: 10px;
+      font-size: 18px;
+      border: 2px solid #007BFF;
+      border-radius: 10px;
+      text-transform: uppercase;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #333;
+      text-align: left;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .airport-info {
+      background-color: #f8f9fa;
+      padding: 25px;
+      border-radius: 15px;
+      border-left: 4px solid #007BFF;
+      margin: 20px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .info-row {
+      margin: 15px 0;
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+    }
+    .info-label {
+      font-weight: bold;
+      margin-right: 15px;
+      min-width: 140px;
+      flex-shrink: 0;
+    }
+    .info-value {
+      flex: 1;
+      word-break: break-word;
+    }
+    
+    @media (max-width: 768px) {
+      .container {
+        width: 95%;
+        padding: 20px;
+      }
+      .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        margin: 12px 0;
+      }
+      .info-label {
+        margin-bottom: 5px;
+        min-width: auto;
+      }
+      .airport-info {
+        padding: 20px;
+      }
+    }
+    .airport-type {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .large-airport { background: #d4edda; color: #155724; }
+    .medium-airport { background: #d1ecf1; color: #0c5460; }
+    .small-airport { background: #fff3cd; color: #856404; }
+    .heliport { background: #f8d7da; color: #721c24; }
+    .coordinates {
+      font-family: monospace;
+      background: #e9ecef;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .link {
+      color: #007BFF;
+      text-decoration: none;
+    }
+    .link:hover {
+      text-decoration: underline;
+    }
+    .scheduled-yes {
+      background-color: #28a745;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+    .scheduled-no {
+      background-color: #6c757d;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+    .link-button {
+      display: inline-block;
+      background-color: #17a2b8;
+      color: white;
+      padding: 5px 10px;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 12px;
+      margin: 2px;
+    }
+    .link-button:hover {
+      background-color: #138496;
+    }
+    .coordinates {
+      font-family: monospace;
+      background-color: #e9ecef;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-btn" aria-label="Torna indietro">
+    <span class="material-icons">arrow_back</span>
+  </a>
+
+  <div class="container">
+    <h2>🔎 Ricerca Aeroporto</h2>
+    <input type="text" id="airportCode" placeholder="Codice IATA o ICAO">
+    <br>
+    <button onclick="searchAirport()">Cerca</button>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    let airports = [];
+
+    // Carica il dataset pubblico (circa 70KB)
+    async function loadAirports() {
+      try {
+        const response = await fetch('https://raw.githubusercontent.com/davidmegginson/ourairports-data/main/airports.csv');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const text = await response.text();
+        
+        // Verifica che la risposta non sia HTML (pagina di errore)
+        if (text.trim().startsWith('<')) {
+          throw new Error('Ricevuta pagina HTML invece di dati CSV');
+        }
+        
+        // Parse del CSV
+        const lines = text.trim().split('\n');
+        const headers = lines[0].split(',');
+        
+        airports = lines.slice(1).map(line => {
+          const values = line.split(',');
+          const airport = {};
+          headers.forEach((header, index) => {
+            airport[header.replace(/"/g, '')] = values[index] ? values[index].replace(/"/g, '') : '';
+          });
+          return airport;
+        }).filter(airport => airport.iata_code && airport.iata_code.length === 3);
+        
+        console.log(`Caricati ${airports.length} aeroporti`);
+        document.getElementById("result").innerHTML = "✅ Dati aeroporti caricati con successo!";
+        
+      } catch (error) {
+        console.error("Errore nel caricamento dati:", error);
+        document.getElementById("result").innerHTML = "❌ Errore nel caricamento dati degli aeroporti. Controlla la console per dettagli.";
+      }
+    }
+
+    async function searchAirport() {
+      const code = document.getElementById("airportCode").value.trim().toUpperCase();
+      const resultDiv = document.getElementById("result");
+
+      if (!code) {
+        resultDiv.innerHTML = "⚠️ Inserisci un codice IATA o ICAO.";
+        return;
+      }
+
+      if (airports.length === 0) {
+        resultDiv.innerHTML = "⏳ Caricamento dati, riprova tra un momento...";
+        return;
+      }
+
+      // Cerca per IATA o ICAO
+      const airport = airports.find(a => a.iata_code === code || a.ident === code);
+
+      if (airport) {
+        resultDiv.innerHTML = formatAirportInfo(airport);
+      } else {
+        resultDiv.innerHTML = "❌ Nessun aeroporto trovato per questo codice.";
+      }
+    }
+
+    function formatAirportInfo(airport) {
+      // Funzione per ottenere la classe CSS del tipo di aeroporto
+      function getAirportTypeClass(type) {
+        return type ? type.replace('_', '-') : 'unknown';
+      }
+
+      // Funzione per formattare le coordinate
+      function formatCoordinate(lat, lon) {
+        if (!lat || !lon) return 'Non disponibili';
+        return `${parseFloat(lat).toFixed(6)}, ${parseFloat(lon).toFixed(6)}`;
+      }
+
+      // Funzione per convertire piedi in metri
+      function formatElevation(feet) {
+        if (!feet || feet === '') return 'Non disponibile';
+        const meters = Math.round(parseFloat(feet) * 0.3048);
+        return `${feet} ft (${meters} m)`;
+      }
+
+      // Funzione per creare link cliccabili
+      function createLink(url, text) {
+        if (!url || url === '') return 'Non disponibile';
+        return `<a href="${url}" target="_blank" class="link">${text || url}</a>`;
+      }
+
+      return `
+        <div class="airport-info">
+          <div style="text-align: center; margin-bottom: 15px;">
+            <h3 style="margin: 0; color: #007BFF;">${airport.name || 'Nome non disponibile'}</h3>
+            <span class="airport-type ${getAirportTypeClass(airport.type)}">${airport.type || 'Tipo sconosciuto'}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">🏷️ Codici:</span>
+            <span class="info-value">
+              ${airport.iata_code ? `IATA: <strong>${airport.iata_code}</strong>` : ''} 
+              ${airport.icao_code ? `• ICAO: <strong>${airport.icao_code}</strong>` : ''}
+              ${airport.ident ? `• ID: ${airport.ident}` : ''}
+            </span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">📍 Posizione:</span>
+            <span class="info-value">${airport.municipality || 'Località sconosciuta'}, ${airport.iso_country || 'Paese sconosciuto'}</span>
+          </div>
+
+          ${airport.iso_region ? `
+          <div class="info-row">
+            <span class="info-label">🗺️ Regione:</span>
+            <span class="info-value">${airport.iso_region}</span>
+          </div>` : ''}
+
+          <div class="info-row">
+            <span class="info-label">🌍 Coordinate:</span>
+            <span class="info-value coordinates">${formatCoordinate(airport.latitude_deg, airport.longitude_deg)}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">⛰️ Altitudine:</span>
+            <span class="info-value">${formatElevation(airport.elevation_ft)}</span>
+          </div>
+
+          <div class="info-row">
+            <span class="info-label">✈️ Voli di linea:</span>
+            <span class="info-value">${airport.scheduled_service === 'yes' ? '✅ Sì' : '❌ No'}</span>
+          </div>
+
+          ${airport.home_link ? `
+          <div class="info-row">
+            <span class="info-label">🌐 Sito web:</span>
+            <span class="info-value">${createLink(airport.home_link, 'Visita sito ufficiale')}</span>
+          </div>` : ''}
+
+          ${airport.wikipedia_link ? `
+          <div class="info-row">
+            <span class="info-label">📚 Wikipedia:</span>
+            <span class="info-value">${createLink(airport.wikipedia_link, 'Leggi su Wikipedia')}</span>
+          </div>` : ''}
+
+          ${airport.keywords ? `
+          <div class="info-row">
+            <span class="info-label">🔍 Keywords:</span>
+            <span class="info-value" style="font-size: 14px; color: #6c757d;">${airport.keywords}</span>
+          </div>` : ''}
+
+          <div style="margin-top: 15px; text-align: center;">
+            <a href="https://www.google.com/maps?q=${airport.latitude_deg},${airport.longitude_deg}" target="_blank" class="link">
+              🗺️ Visualizza su Google Maps
+            </a>
+          </div>
+        </div>
+      `;
+    }
+
+    // Caricamento iniziale
+    loadAirports();
+  </script>
+</body>
+</html>

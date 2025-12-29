@@ -83,16 +83,69 @@
       color: #333;
     }
 
+    .textarea-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
     textarea {
       width: 100%;
       height: 150px;
       padding: 1rem;
       font-size: 1rem;
+      line-height: 1.5;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       border: 2px solid #ddd;
       border-radius: 12px;
       resize: vertical;
       outline: none;
       transition: border-color 0.3s;
+      background: transparent;
+      position: relative;
+      z-index: 2;
+      box-sizing: border-box;
+      margin: 0;
+      text-align: left;
+    }
+
+    .text-highlight {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 1rem;
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.5;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      overflow: auto;
+      pointer-events: none;
+      z-index: 1;
+      color: transparent;
+      box-sizing: border-box;
+      text-align: left;
+    }
+
+    .text-highlight span.current {
+      background: #ffc107;
+      color: transparent;
+      padding: 2px 0;
+      border-radius: 3px;
+    }
+
+    .text-highlight::-webkit-scrollbar {
+      display: none;
+    }
+
+    .text-highlight {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
 
     textarea:focus {
@@ -100,7 +153,7 @@
     }
 
     .progress-container {
-      width: 100%;
+      flex: 1;
       height: 10px;
       background: #eee;
       border-radius: 8px;
@@ -153,6 +206,105 @@
     button:active {
       transform: scale(0.97);
     }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .icon-btn {
+      width: 60px;
+      height: 60px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 2rem;
+    }
+
+    .icon-btn .material-icons {
+      font-size: 32px;
+    }
+
+    .play-btn {
+      background: #28a745;
+    }
+
+    .play-btn:hover:not(:disabled) {
+      background: #218838;
+    }
+
+    .pause-btn {
+      background: #ffc107;
+    }
+
+    .pause-btn:hover:not(:disabled) {
+      background: #e0a800;
+    }
+
+    .stop-btn {
+      background: #dc3545;
+    }
+
+    .stop-btn:hover:not(:disabled) {
+      background: #c82333;
+    }
+
+    .clear-btn {
+      background: #6c757d;
+    }
+
+    .clear-btn:hover:not(:disabled) {
+      background: #5a6268;
+    }
+
+    .timer {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #333;
+      font-family: 'Courier New', monospace;
+      white-space: nowrap;
+      min-width: 100px;
+      text-align: center;
+    }
+
+    .controls-container {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      width: 100%;
+      align-items: center;
+    }
+
+    .progress-timer-row {
+      display: flex;
+      gap: 1rem;
+      width: 100%;
+      align-items: center;
+    }
+
+    .player-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .select-row {
+      display: flex;
+      gap: 0.5rem;
+      width: 100%;
+      align-items: center;
+    }
+
+    #langSelect {
+      flex: 0 0 35%;
+    }
+
+    #voiceSelect {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
@@ -161,40 +313,70 @@
   </a>
   <div class="container">
     <h1>🗣 Text to Speech</h1>
-    <textarea id="textInput" placeholder="Scrivi o incolla un testo lungo..."></textarea>
-
-    <div class="progress-container">
-      <div class="progress-bar" id="progressBar"></div>
+    <div class="textarea-wrapper">
+      <div class="text-highlight" id="textHighlight"></div>
+      <textarea id="textInput" placeholder="Scrivi o incolla un testo lungo..."></textarea>
     </div>
 
-    <select id="langSelect">
-      <option value="it-IT" selected>Italiano (it-IT)</option>
-      <option value="en-US">Inglese (en-US)</option>
-      <option value="fr-FR">Francese (fr-FR)</option>
-      <option value="es-ES">Spagnolo (es-ES)</option>
-      <option value="de-DE">Tedesco (de-DE)</option>
-    </select>
+    <div class="controls-container">
+      <div class="progress-timer-row">
+        <div class="progress-container">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="timer" id="timer">00:00:00</div>
+      </div>
 
-    <select id="voiceSelect"></select>
-    
-    <div class="btn-group">
-      <button id="readBtn">Leggi</button>
-      <button id="stopBtn" style="background:#dc3545;">Stop</button>
-      <button id="clearBtn" style="background:#6c757d;">Clear</button>
+      <div class="player-controls">
+        <button id="playBtn" class="icon-btn play-btn" title="Play">
+          <span class="material-icons">play_arrow</span>
+        </button>
+        <button id="pauseBtn" class="icon-btn pause-btn" title="Pausa" disabled>
+          <span class="material-icons">pause</span>
+        </button>
+        <button id="stopBtn" class="icon-btn stop-btn" title="Stop" disabled>
+          <span class="material-icons">stop</span>
+        </button>
+        <button id="clearBtn" class="icon-btn clear-btn" title="Clear">
+          <span class="material-icons">delete</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="select-row">
+      <select id="langSelect">
+        <option value="it-IT" selected>Italiano (it-IT)</option>
+        <option value="en-US">Inglese (en-US)</option>
+        <option value="fr-FR">Francese (fr-FR)</option>
+        <option value="es-ES">Spagnolo (es-ES)</option>
+        <option value="de-DE">Tedesco (de-DE)</option>
+      </select>
+
+      <select id="voiceSelect"></select>
     </div>
   </div>
 
   <script>
-    const readBtn = document.getElementById("readBtn");
+    const playBtn = document.getElementById("playBtn");
+    const pauseBtn = document.getElementById("pauseBtn");
     const stopBtn = document.getElementById("stopBtn");
     const clearBtn = document.getElementById("clearBtn");
     const textInput = document.getElementById("textInput");
+    const textHighlight = document.getElementById("textHighlight");
     const voiceSelect = document.getElementById("voiceSelect");
     const langSelect = document.getElementById("langSelect");
     const progressBar = document.getElementById("progressBar");
+    const timer = document.getElementById("timer");
 
     let voices = [];
     let utterance = null;
+    let isPaused = false;
+    let startTime = 0;
+    let elapsedTime = 0;
+    let timerInterval = null;
+    let pausedCharIndex = 0;
+    let fullText = "";
+    let totalDuration = 0;
+    let estimatedEndTime = 0;
 
     function populateVoices() {
       voices = speechSynthesis.getVoices();
@@ -226,10 +408,111 @@
 
     langSelect.addEventListener("change", updateVoiceList);
 
-    readBtn.addEventListener("click", () => {
+    // Sincronizza lo scroll dell'overlay con il textarea
+    textInput.addEventListener('scroll', () => {
+      textHighlight.scrollTop = textInput.scrollTop;
+      textHighlight.scrollLeft = textInput.scrollLeft;
+    });
+
+    function formatTime(seconds) {
+      const hrs = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function updateTimer() {
+      const elapsed = (Date.now() - startTime) / 1000 + elapsedTime;
+      const remaining = Math.max(0, totalDuration - elapsed);
+      timer.textContent = formatTime(remaining);
+    }
+
+    function calculateDuration(text, rate = 1) {
+      // Stima: circa 150 parole al minuto per la velocità normale
+      const words = text.trim().split(/\s+/).length;
+      const minutes = words / (150 * rate);
+      return minutes * 60; // ritorna secondi
+    }
+
+    function highlightCurrentWord(charIndex) {
+      if (!fullText) {
+        textHighlight.innerHTML = '';
+        return;
+      }
+      
+      // Trova l'inizio della parola corrente
+      let wordStart = charIndex;
+      while (wordStart > 0 && /\S/.test(fullText[wordStart - 1])) {
+        wordStart--;
+      }
+      
+      // Trova la fine della parola corrente
+      let wordEnd = charIndex;
+      while (wordEnd < fullText.length && /\S/.test(fullText[wordEnd])) {
+        wordEnd++;
+      }
+      
+      const beforeWord = fullText.substring(0, wordStart);
+      const currentWord = fullText.substring(wordStart, wordEnd);
+      const afterWord = fullText.substring(wordEnd);
+      
+      // Escape HTML per sicurezza
+      const escapeHtml = (text) => {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      };
+      
+      textHighlight.innerHTML = 
+        escapeHtml(beforeWord) + 
+        '<span class="current">' + escapeHtml(currentWord) + '</span>' + 
+        escapeHtml(afterWord);
+      
+      // Sincronizza lo scroll
+      textHighlight.scrollTop = textInput.scrollTop;
+      textHighlight.scrollLeft = textInput.scrollLeft;
+    }
+
+    function startTimer() {
+      startTime = Date.now();
+      timerInterval = setInterval(updateTimer, 100);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    }
+
+    function resetTimer() {
+      stopTimer();
+      elapsedTime = 0;
+      timer.textContent = "00:00:00";
+    }
+
+    function updateButtonStates(playing, paused) {
+      playBtn.disabled = playing && !paused;
+      pauseBtn.disabled = !playing || paused;
+      stopBtn.disabled = !playing;
+    }
+
+    playBtn.addEventListener("click", () => {
       const text = textInput.value.trim();
-      if (text !== "") {
+      if (text === "") return;
+
+      if (isPaused && utterance) {
+        // Riprendi dalla pausa
+        speechSynthesis.resume();
+        isPaused = false;
+        startTimer();
+        updateButtonStates(true, false);
+      } else {
+        // Nuova riproduzione
         speechSynthesis.cancel();
+        fullText = text;
+        pausedCharIndex = 0;
+        progressBar.style.width = "0%";
 
         utterance = new SpeechSynthesisUtterance(text);
         const selectedVoiceName = voiceSelect.value;
@@ -242,26 +525,65 @@
         utterance.rate = 1;
         utterance.pitch = 1;
 
-        progressBar.style.width = "0%";
+        // Calcola la durata totale stimata
+        totalDuration = calculateDuration(text, utterance.rate);
+        elapsedTime = 0;
+        timer.textContent = formatTime(totalDuration);
+
+        // Inizializza l'evidenziazione
+        textHighlight.textContent = text;
+
+        utterance.onstart = () => {
+          startTimer();
+          updateButtonStates(true, false);
+        };
 
         utterance.onboundary = (event) => {
           if (event.charIndex !== undefined) {
-            const progress = (event.charIndex / text.length) * 100;
+            pausedCharIndex = event.charIndex;
+            const progress = (event.charIndex / fullText.length) * 100;
             progressBar.style.width = progress + "%";
+            highlightCurrentWord(event.charIndex);
           }
         };
 
         utterance.onend = () => {
           progressBar.style.width = "100%";
+          stopTimer();
+          timer.textContent = "00:00:00";
+          updateButtonStates(false, false);
+          isPaused = false;
+          textHighlight.innerHTML = '';
+        };
+
+        utterance.onerror = () => {
+          stopTimer();
+          updateButtonStates(false, false);
+          isPaused = false;
+          textHighlight.innerHTML = '';
         };
 
         speechSynthesis.speak(utterance);
       }
     });
 
+    pauseBtn.addEventListener("click", () => {
+      if (speechSynthesis.speaking && !isPaused) {
+        speechSynthesis.pause();
+        isPaused = true;
+        stopTimer();
+        elapsedTime += (Date.now() - startTime) / 1000;
+        updateButtonStates(true, true);
+      }
+    });
+
     stopBtn.addEventListener("click", () => {
       speechSynthesis.cancel();
+      isPaused = false;
+      resetTimer();
       progressBar.style.width = "0%";
+      updateButtonStates(false, false);
+      textHighlight.innerHTML = '';
     });
 
     clearBtn.addEventListener("click", () => {

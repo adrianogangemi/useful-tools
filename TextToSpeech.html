@@ -373,10 +373,12 @@
     let startTime = 0;
     let elapsedTime = 0;
     let timerInterval = null;
-    let pausedCharIndex = 0;
     let fullText = "";
     let totalDuration = 0;
-    let estimatedEndTime = 0;
+    let isPlaying = false;
+    let selectedVoice = null;
+    let selectedLang = "";
+    let keepAliveInterval = null;
 
     function populateVoices() {
       voices = speechSynthesis.getVoices();
@@ -434,40 +436,36 @@
       return minutes * 60; // ritorna secondi
     }
 
-    function highlightCurrentWord(charIndex) {
+    function highlightWord(charIndex, charLength) {
       if (!fullText) {
         textHighlight.innerHTML = '';
         return;
       }
-      
-      // Trova l'inizio della parola corrente
+
       let wordStart = charIndex;
-      while (wordStart > 0 && /\S/.test(fullText[wordStart - 1])) {
-        wordStart--;
+      let wordEnd;
+
+      if (charLength) {
+        // Usa la lunghezza fornita dall'evento se disponibile
+        wordEnd = charIndex + charLength;
+      } else {
+        // Fallback: scansiona i confini della parola
+        while (wordStart > 0 && /\S/.test(fullText[wordStart - 1])) wordStart--;
+        wordEnd = charIndex;
+        while (wordEnd < fullText.length && /\S/.test(fullText[wordEnd])) wordEnd++;
       }
-      
-      // Trova la fine della parola corrente
-      let wordEnd = charIndex;
-      while (wordEnd < fullText.length && /\S/.test(fullText[wordEnd])) {
-        wordEnd++;
-      }
-      
-      const beforeWord = fullText.substring(0, wordStart);
-      const currentWord = fullText.substring(wordStart, wordEnd);
-      const afterWord = fullText.substring(wordEnd);
-      
-      // Escape HTML per sicurezza
-      const escapeHtml = (text) => {
+
+      const escapeHtml = (t) => {
         const div = document.createElement('div');
-        div.textContent = text;
+        div.textContent = t;
         return div.innerHTML;
       };
-      
-      textHighlight.innerHTML = 
-        escapeHtml(beforeWord) + 
-        '<span class="current">' + escapeHtml(currentWord) + '</span>' + 
-        escapeHtml(afterWord);
-      
+
+      textHighlight.innerHTML =
+        escapeHtml(fullText.substring(0, wordStart)) +
+        '<span class="current">' + escapeHtml(fullText.substring(wordStart, wordEnd)) + '</span>' +
+        escapeHtml(fullText.substring(wordEnd));
+
       // Sincronizza lo scroll
       textHighlight.scrollTop = textInput.scrollTop;
       textHighlight.scrollLeft = textInput.scrollLeft;
@@ -497,69 +495,87 @@
       stopBtn.disabled = !playing;
     }
 
+    // Keep-alive: Chrome smette di parlare su testi lunghi se non viene "stimolato"
+    function startKeepAlive() {
+      keepAliveInterval = setInterval(() => {
+        if (speechSynthesis.speaking && !isPaused) {
+          speechSynthesis.pause();
+          speechSynthesis.resume();
+        }
+      }, 10000);
+    }
+
+    function stopKeepAlive() {
+      if (keepAliveInterval) {
+        clearInterval(keepAliveInterval);
+        keepAliveInterval = null;
+      }
+    }
+
     playBtn.addEventListener("click", () => {
       const text = textInput.value.trim();
       if (text === "") return;
 
       if (isPaused && utterance) {
-        // Riprendi dalla pausa
         speechSynthesis.resume();
         isPaused = false;
+        isPlaying = true;
         startTimer();
+        startKeepAlive();
         updateButtonStates(true, false);
       } else {
-        // Nuova riproduzione
         speechSynthesis.cancel();
+        stopKeepAlive();
         fullText = text;
-        pausedCharIndex = 0;
         progressBar.style.width = "0%";
 
-        utterance = new SpeechSynthesisUtterance(text);
-        const selectedVoiceName = voiceSelect.value;
-        const selectedVoice = voices.find(v => v.name === selectedVoiceName);
+        // Fissa voce e lingua per tutta la riproduzione
+        selectedLang = langSelect.value;
+        selectedVoice = voices.find(v => v.name === voiceSelect.value) || null;
 
-        if (selectedVoice) {
-          utterance.voice = selectedVoice;
-        }
-        utterance.lang = langSelect.value;
+        utterance = new SpeechSynthesisUtterance(text);
+        if (selectedVoice) utterance.voice = selectedVoice;
+        utterance.lang = selectedLang;
         utterance.rate = 1;
         utterance.pitch = 1;
 
-        // Calcola la durata totale stimata
-        totalDuration = calculateDuration(text, utterance.rate);
+        totalDuration = calculateDuration(text, 1);
         elapsedTime = 0;
         timer.textContent = formatTime(totalDuration);
 
-        // Inizializza l'evidenziazione
-        textHighlight.textContent = text;
-
         utterance.onstart = () => {
+          isPlaying = true;
           startTimer();
+          startKeepAlive();
           updateButtonStates(true, false);
         };
 
         utterance.onboundary = (event) => {
-          if (event.charIndex !== undefined) {
-            pausedCharIndex = event.charIndex;
+          if (event.name === 'word' && event.charIndex !== undefined) {
             const progress = (event.charIndex / fullText.length) * 100;
             progressBar.style.width = progress + "%";
-            highlightCurrentWord(event.charIndex);
+            highlightWord(event.charIndex, event.charLength);
           }
         };
 
         utterance.onend = () => {
           progressBar.style.width = "100%";
           stopTimer();
+          stopKeepAlive();
           timer.textContent = "00:00:00";
-          updateButtonStates(false, false);
+          isPlaying = false;
           isPaused = false;
+          updateButtonStates(false, false);
           textHighlight.innerHTML = '';
         };
 
-        utterance.onerror = () => {
+        utterance.onerror = (e) => {
+          if (e.error === 'interrupted' || e.error === 'canceled') return;
           stopTimer();
-          updateButtonStates(false, false);
+          stopKeepAlive();
+          isPlaying = false;
           isPaused = false;
+          updateButtonStates(false, false);
           textHighlight.innerHTML = '';
         };
 
@@ -571,15 +587,19 @@
       if (speechSynthesis.speaking && !isPaused) {
         speechSynthesis.pause();
         isPaused = true;
+        isPlaying = false;
         stopTimer();
+        stopKeepAlive();
         elapsedTime += (Date.now() - startTime) / 1000;
         updateButtonStates(true, true);
       }
     });
 
     stopBtn.addEventListener("click", () => {
-      speechSynthesis.cancel();
+      isPlaying = false;
       isPaused = false;
+      speechSynthesis.cancel();
+      stopKeepAlive();
       resetTimer();
       progressBar.style.width = "0%";
       updateButtonStates(false, false);
@@ -587,9 +607,13 @@
     });
 
     clearBtn.addEventListener("click", () => {
+      isPlaying = false;
+      isPaused = false;
+      speechSynthesis.cancel();
+      stopKeepAlive();
       textInput.value = "";
       progressBar.style.width = "0%";
-      speechSynthesis.cancel();
+      textHighlight.innerHTML = '';
     });
   </script>
 </body>
